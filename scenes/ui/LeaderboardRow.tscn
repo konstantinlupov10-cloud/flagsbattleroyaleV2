@@ -27,7 +27,7 @@ stretch_mode = 5
 [node name="NameLabel" type="Label" parent="HBox"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.909804, 0.941176, 1, 1)
+theme_override_colors/font_color = Color(0.941176, 0.909804, 1, 1)
 theme_override_font_sizes/font_size = 22
 text = "Country"
 vertical_alignment = 1

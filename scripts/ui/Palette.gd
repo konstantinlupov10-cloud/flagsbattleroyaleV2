@@ -4,18 +4,18 @@ class_name Palette
 ## Palette.gd, trimmed to just what this project's leaderboard/strip need
 ## (no payout/slot ramp, this isn't Plinko).
 
-const BG := Color("#0B1220")
-const PANEL := Color("#131C42")
-const PANEL_EDGE := Color("#233066")
-const BLUE := Color("#3B82F6")
-const CYAN := Color("#22D3EE")
+const BG := Color("#12091F")
+const PANEL := Color("#1E1142")
+const PANEL_EDGE := Color("#3B2166")
+const BLUE := Color("#8B5CF6")
+const CYAN := Color("#E879F9")
 const GOLD := Color("#FFC94A")
-const TEXT := Color("#E8F0FF")
-const TEXT_DIM := Color("#8FA3CC")
+const TEXT := Color("#F0E8FF")
+const TEXT_DIM := Color("#A896CC")
 
 static func rank_color(rank: int) -> Color:
 	match rank:
 		1: return GOLD
-		2: return Color("#CBD5E1")
+		2: return Color("#D8CCE6")
 		3: return Color("#D08A4E")
 		_: return TEXT_DIM

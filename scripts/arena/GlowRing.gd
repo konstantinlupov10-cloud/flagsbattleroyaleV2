@@ -31,11 +31,11 @@ const OUTLINE_POINTS_PER_DEGREE := 4.0
 ## (width_px, color) pairs, outermost/dimmest first, innermost/brightest
 ## last.
 const LAYERS: Array = [
-	{"width": 26.0, "color": Color(0.4, 0.75, 1.0, 0.05)},
-	{"width": 18.0, "color": Color(0.5, 0.8, 1.0, 0.10)},
-	{"width": 12.0, "color": Color(0.6, 0.85, 1.0, 0.20)},
-	{"width": 8.0, "color": Color(0.75, 0.92, 1.0, 0.45)},
-	{"width": 4.0, "color": Color(0.95, 0.98, 1.0, 1.0)},
+	{"width": 26.0, "color": Color(0.65, 0.4, 1.0, 0.05)},
+	{"width": 18.0, "color": Color(0.7, 0.5, 1.0, 0.10)},
+	{"width": 12.0, "color": Color(0.75, 0.6, 1.0, 0.20)},
+	{"width": 8.0, "color": Color(0.85, 0.78, 1.0, 0.45)},
+	{"width": 4.0, "color": Color(0.97, 0.95, 1.0, 1.0)},
 ]
 
 var _lines: Array = []
