@@ -6,6 +6,7 @@ extends Node2D
 ## are detected and reported directly by EscapeDetector, not through Main.
 
 const ARENA_SCENE: PackedScene = preload("res://scenes/arena/Arena.tscn")
+const GLOW_RING_SCENE: PackedScene = preload("res://scenes/arena/GlowRing.tscn")
 const FLAG_SCENE: PackedScene = preload("res://scenes/flag/Flag.tscn")
 
 ## Concentric-ring packing: rings of evenly-spaced points, stepping outward
@@ -42,6 +43,15 @@ func _ready() -> void:
 	_arena = ARENA_SCENE.instantiate()
 	add_child(_arena)
 	move_child(_arena, 0)  # keep the arena drawn behind flags/UI
+
+	# GlowRing draws the ring's neon outline itself (Arena's own GapRing is
+	# now purely physics, invisible) -- see GlowRing.gd for why this needs
+	# to be a separate node in its own SubViewport rather than just another
+	# child here. Drawn right after Arena, still behind flags/UI.
+	var glow_ring: GlowRing = GLOW_RING_SCENE.instantiate()
+	add_child(glow_ring)
+	move_child(glow_ring, 1)
+	glow_ring.setup(_arena.gap_ring)
 
 	GameManager.tournament_started.connect(_on_tournament_started)
 	GameManager.qualifying_round_reset.connect(_on_qualifying_round_reset)
