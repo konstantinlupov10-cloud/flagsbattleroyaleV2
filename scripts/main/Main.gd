@@ -83,22 +83,49 @@ func _ring_capacity(spacing: float, min_radius: float, max_radius: float) -> int
 ## spacing (down to a hard floor) if the arena is too small to fit the full
 ## roster at full spacing -- guarantees every point still gets SOME minimum
 ## clearance rather than silently overlapping once the math doesn't fit.
+##
+## First figures out how many rings (and how many points per ring) `count`
+## actually needs at this spacing -- using min_radius purely as a stand-in
+## to size each ring's point capacity, NOT as where that ring ends up. Those
+## rings then get spread evenly across the FULL [min_radius, max_radius]
+## span rather than packed in tight starting from min_radius outward. That
+## distinction only shows up once `count` is small (a late Last Flag
+## Standing round, down to a handful of flags): the old inside-out packing
+## always fit those few points in the first ring or two, which sits barely
+## past the arena's dead center regardless of how big the arena actually
+## is -- every post-elimination respawn looked like the remaining flags
+## piling up in the middle and exploding outward (confirmed via direct
+## report). Spreading whatever ring count was actually needed across the
+## whole radius instead keeps every respawn using the entire arena no
+## matter how few flags are left; for the full ~250-flag roster this comes
+## out to essentially the same ring spacing as before, since needing many
+## rings to fit that many points already spans close to the full range.
 func _pack_positions(count: int, min_radius: float, max_radius: float, base_spacing: float) -> Array:
 	var spacing := base_spacing
 	while spacing > 4.0 and _ring_capacity(spacing, min_radius, max_radius) < count:
 		spacing *= 0.95
+
+	var ring_point_counts: Array[int] = []
+	var sizing_r := min_radius
+	var remaining := count
+	while remaining > 0:
+		var n_this_ring: int = mini(maxi(1, floori(TAU * sizing_r / spacing)), remaining)
+		ring_point_counts.append(n_this_ring)
+		remaining -= n_this_ring
+		sizing_r += spacing
+
+	var ring_count: int = ring_point_counts.size()
 	var positions: Array = []
-	var r := min_radius
 	var ring_phase := 0.0
-	while r <= max_radius and positions.size() < count:
-		var n_this_ring: int = maxi(1, floori(TAU * r / spacing))
+	for ring_index in range(ring_count):
+		var ring_radius: float = (min_radius + max_radius) * 0.5 if ring_count == 1 \
+			else lerp(min_radius, max_radius, float(ring_index) / float(ring_count - 1))
+		var n_this_ring: int = ring_point_counts[ring_index]
 		for i in range(n_this_ring):
-			if positions.size() >= count:
-				break
 			var theta: float = (TAU * float(i) / float(n_this_ring)) + ring_phase
-			positions.append(Vector2(cos(theta), sin(theta)) * r)
+			positions.append(Vector2(cos(theta), sin(theta)) * ring_radius)
 		ring_phase += 0.5  # stagger successive rings so points don't line up radially
-		r += spacing
+
 	# Unreachable given the area math above for any realistic roster/arena
 	# size, but never leave a flag without a valid spawn position.
 	while positions.size() < count:
