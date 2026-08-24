@@ -52,5 +52,21 @@ func _physics_process(_delta: float) -> void:
 			# Permanent safety net, not a rare-case guard -- see the signal's
 			# doc comment above. Silent correction, no per-event logging.
 			tunneling_detected.emit(flag.country_code)
-			flag.global_position = _center + offset.normalized() * (RoyaleSettings.ring_radius - 5.0)
+			# Lands clearly inside the wall's own INNER face (ring_radius -
+			# wall_thickness_px/2), not just barely inside ring_radius
+			# itself. The previous ring_radius-5.0 target (445, with the
+			# wall spanning 430-470) sat INSIDE the wall's own physical
+			# footprint -- at the speeds/tunneling rates this project runs
+			# at now, a flag correcting there over and over reads as
+			# permanently glued to the boundary line rather than as a
+			# clean "back inside the arena" correction (confirmed via
+			# direct feedback -- what looked like flags spawning on the
+			# ring line was actually this).
+			flag.global_position = _center + offset.normalized() * \
+				(RoyaleSettings.ring_radius - RoyaleSettings.wall_thickness_px * 0.5 - 20.0)
+			# Without this, physics interpolation (see project.godot) would
+			# visibly slide the flag from its pre-correction position to
+			# this teleported one over one frame instead of correcting it
+			# instantly.
+			flag.reset_physics_interpolation()
 			flag.linear_velocity = flag.linear_velocity.bounce(offset.normalized())

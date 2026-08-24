@@ -21,6 +21,19 @@ class_name GapRing
 func _ready() -> void:
 	collision_layer = 2
 	collision_mask = 0
+	# Without an explicit override, a StaticBody2D collides at the engine's
+	# default bounce (0.0) -- which can dominate however Godot combines the
+	# two sides' bounce values, silently making wall collisions far less
+	# elastic than flag_bounce alone would suggest. Matching it here removes
+	# that ambiguity outright: both sides agree on full elastic restitution,
+	# so a wall bounce is a true mirror reflection with no directional bias.
+	# See RoyaleSettings.flag_bounce's comment for the full reasoning -- this
+	# was the actual cause of flags gradually converging into a perimeter
+	# "orbit" over time, not the flag-side physics.
+	var mat := PhysicsMaterial.new()
+	mat.friction = 0.0
+	mat.bounce = RoyaleSettings.flag_bounce
+	physics_material_override = mat
 	_build_segments()
 
 func _build_segments() -> void:

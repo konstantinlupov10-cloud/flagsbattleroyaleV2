@@ -1,0 +1,64 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/EjectedStrip.gd" id="1"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_track"]
+bg_color = Color(0.0745098, 0.109804, 0.258824, 0.9)
+corner_radius_top_left = 7
+corner_radius_top_right = 7
+corner_radius_bottom_right = 7
+corner_radius_bottom_left = 7
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_fill"]
+bg_color = Color(1, 0.788235, 0.290196, 1)
+corner_radius_top_left = 7
+corner_radius_top_right = 7
+corner_radius_bottom_right = 7
+corner_radius_bottom_left = 7
+
+[node name="EjectedStrip" type="CanvasLayer"]
+layer = 5
+script = ExtResource("1")
+
+[node name="Root" type="Control" parent="."]
+offset_left = 60.0
+offset_top = 1440.0
+offset_right = 1020.0
+offset_bottom = 1900.0
+
+[node name="VBox" type="VBoxContainer" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_constants/separation = 10
+
+[node name="CountLabel" type="Label" parent="Root/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.909804, 0.941176, 1, 1)
+theme_override_font_sizes/font_size = 22
+text = "0 / 0 FLAGS"
+horizontal_alignment = 1
+
+[node name="BarTrack" type="Panel" parent="Root/VBox"]
+custom_minimum_size = Vector2(0, 14)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_track")
+
+[node name="BarFill" type="Panel" parent="Root/VBox/BarTrack"]
+layout_mode = 1
+anchors_preset = -1
+anchor_bottom = 1.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_fill")
+
+[node name="Scroll" type="ScrollContainer" parent="Root/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="Grid" type="GridContainer" parent="Root/VBox/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/h_separation = 6
+theme_override_constants/v_separation = 6
+columns = 25
