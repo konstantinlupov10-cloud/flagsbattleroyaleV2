@@ -1,0 +1,52 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/StartScreen.gd" id="1"]
+
+[node name="StartScreen" type="CanvasLayer"]
+layer = 10
+script = ExtResource("1")
+
+[node name="Root" type="Control" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Dim" type="ColorRect" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Card" type="PanelContainer" parent="Root"]
+layout_mode = 0
+offset_left = 190.0
+offset_top = 750.0
+offset_right = 890.0
+offset_bottom = 1170.0
+
+[node name="VBox" type="VBoxContainer" parent="Root/Card"]
+layout_mode = 2
+theme_override_constants/separation = 28
+
+[node name="TitleLabel" type="Label" parent="Root/Card/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 48
+text = "FLAGS BATTLE ROYALE"
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="SubtitleLabel" type="Label" parent="Root/Card/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 26
+text = "250 flags enter. One survives."
+horizontal_alignment = 1
+
+[node name="StartButton" type="Button" parent="Root/Card/VBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 84)
+theme_override_font_sizes/font_size = 34
+text = "START"

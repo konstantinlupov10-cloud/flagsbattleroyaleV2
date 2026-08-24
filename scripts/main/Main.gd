@@ -61,7 +61,11 @@ func _ready() -> void:
 	GameManager.champion_crowned.connect(_on_champion_crowned)
 	GameManager.tournament_reset.connect(_on_tournament_reset)
 
-	GameManager.start_game()
+	# The very first tournament waits for the player to click START ($StartScreen)
+	# rather than firing the instant the scene loads -- every tournament after
+	# that still loops on its own via GameManager's intermission timer, same
+	# as before this screen existed. This only gates the first one.
+	$StartScreen.start_pressed.connect(GameManager.start_game)
 
 ## Capacity of a ring layout at a given spacing -- summed across every ring
 ## from min_radius to max_radius, stepping by spacing. Used to find the
