@@ -18,9 +18,10 @@ class_name PhaseTimer
 ## reports that were actually just qualifying still legitimately in
 ## progress (confirmed via a full headless run of the state machine).
 ##
-## Hidden entirely during LAST_FLAG_STANDING/CHAMPION_REVEAL -- the final has
-## no timer at all by design (runs to exactly one survivor), and the reveal
-## is its own discrete beat, not something a countdown applies to.
+## Shows a static "FINAL ROUND" label (no countdown -- the final has no timer
+## at all by design, runs to exactly one survivor) during LAST_FLAG_STANDING.
+## Hidden entirely during CHAMPION_REVEAL -- the reveal is its own discrete
+## beat, not something a phase label applies to.
 
 @onready var _label: Label = $Label
 
@@ -32,6 +33,9 @@ func _process(_delta: float) -> void:
 		GameManager.TournamentState.INTERMISSION:
 			_label.visible = true
 			_label.text = "NEXT TOURNAMENT %s" % _format(GameManager.get_intermission_time_left())
+		GameManager.TournamentState.LAST_FLAG_STANDING:
+			_label.visible = true
+			_label.text = "FINAL ROUND"
 		_:
 			_label.visible = false
 

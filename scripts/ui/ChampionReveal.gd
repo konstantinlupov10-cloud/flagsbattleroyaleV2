@@ -7,9 +7,9 @@ class_name ChampionReveal
 ##    flag_qualified the instant a round narrows to exactly one un-ejected
 ##    flag -- that flag didn't need to escape itself, staying in as the only
 ##    one left is sufficient.
-##  - "CHAMPION" -- the actual tournament winner at the end of Last Flag
-##    Standing, same trigger condition (exactly one flag left) applied to
-##    the whole final instead of a single qualifying round, with a longer
+##  - "TOURNAMENT WINNER" -- the actual tournament winner at the end of Last
+##    Flag Standing, same trigger condition (exactly one flag left) applied
+##    to the whole final instead of a single qualifying round, with a longer
 ##    display duration befitting the bigger moment.
 
 ## Matches GameManager.ROUND_ADVANCE_DELAY_SECONDS -- the reveal's own
@@ -19,25 +19,24 @@ class_name ChampionReveal
 ## prevents the reveal disappearing early/lingering after gameplay has
 ## already moved on underneath it.
 const ROUND_WINNER_DISPLAY_SECONDS := 3.0
-## Deliberately NOT tied to intermission_started for the champion case --
-## GameManager._crown_champion() emits champion_crowned and then calls
-## _start_intermission() (which emits intermission_started) immediately
-## afterward, synchronously, in the same call stack, before a single frame
-## ever renders. Hiding on that signal meant the reveal was shown and hidden
-## in the same instant -- visible for zero actual frames (confirmed via a
-## headless run). Timing the hide on a plain duration instead, independent
-## of GameManager's own state transitions, is what actually lets a player
-## see it; GameManager's intermission countdown keeps running underneath
-## regardless, exactly as intended.
-const CHAMPION_DISPLAY_SECONDS := 4.0
+## No fixed display duration for the champion case -- unlike a round winner
+## (which just needs to clear out of the way before the next round's flags
+## spawn underneath it), the tournament winner reveal is meant to stay up
+## for the ENTIRE intermission, only clearing on tournament_started (confirmed
+## via direct request: it was disappearing mid-intermission before this).
 
 @onready var _root: Control = $Root
 @onready var _rays: Control = $Root/Rays
 @onready var _title_label: Label = $Root/Card/TitleLabel
 @onready var _flag_icon: TextureRect = $Root/Card/FlagPanel/FlagIcon
 @onready var _name_label: Label = $Root/Card/NameLabel
+@onready var _next_tournament_label: Label = $Root/Card/NextTournamentLabel
 
 var _hide_tween: Tween
+## True only for the champion/tournament-winner reveal -- gates both the
+## persistent (no auto-hide) behavior and the live "next tournament in..."
+## countdown, neither of which apply to a plain round winner.
+var _is_champion_reveal: bool = false
 
 func _ready() -> void:
 	_root.visible = false
@@ -46,15 +45,17 @@ func _ready() -> void:
 	GameManager.tournament_started.connect(_on_tournament_started)
 
 func _on_flag_qualified(code: String, country_name: String, _rank: int, _total: int) -> void:
-	_show_reveal("ROUND WINNER", code, country_name, ROUND_WINNER_DISPLAY_SECONDS)
+	_show_reveal("ROUND WINNER", code, country_name, false)
 
 func _on_champion_crowned(code: String, country_name: String, _podium: Array) -> void:
-	_show_reveal("CHAMPION", code, country_name, CHAMPION_DISPLAY_SECONDS)
+	_show_reveal("TOURNAMENT WINNER", code, country_name, true)
 
-func _show_reveal(title: String, code: String, country_name: String, display_seconds: float) -> void:
+func _show_reveal(title: String, code: String, country_name: String, is_champion: bool) -> void:
 	_title_label.text = title
 	_flag_icon.texture = FlagDatabase.get_texture(code)
 	_name_label.text = country_name
+	_is_champion_reveal = is_champion
+	_next_tournament_label.visible = is_champion
 	_root.visible = true
 	_root.modulate.a = 0.0
 	_root.scale = Vector2(0.7, 0.7)
@@ -68,13 +69,19 @@ func _show_reveal(title: String, code: String, country_name: String, display_sec
 	# each new reveal restarts its own display clock instead.
 	if _hide_tween and _hide_tween.is_valid():
 		_hide_tween.kill()
+	if is_champion:
+		return  # stays up until _on_tournament_started hides it
 	_hide_tween = create_tween()
-	_hide_tween.tween_interval(display_seconds)
+	_hide_tween.tween_interval(ROUND_WINNER_DISPLAY_SECONDS)
 	_hide_tween.tween_callback(func(): _root.visible = false)
 
 func _on_tournament_started(_total_flags: int) -> void:
 	_root.visible = false
 
 func _process(delta: float) -> void:
-	if _root.visible:
-		_rays.rotation += delta * 0.15
+	if not _root.visible:
+		return
+	_rays.rotation += delta * 0.15
+	if _is_champion_reveal and GameManager.state == GameManager.TournamentState.INTERMISSION:
+		var seconds_left: int = maxi(0, int(ceil(GameManager.get_intermission_time_left())))
+		_next_tournament_label.text = "Next tournament in %d seconds" % seconds_left

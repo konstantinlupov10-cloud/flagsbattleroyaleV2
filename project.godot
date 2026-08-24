@@ -30,6 +30,7 @@ window/size/initial_position_type=0
 window/size/initial_position=Vector2i(0, 45)
 window/size/resizable=false
 window/stretch/mode="canvas_items"
+window/dpi/allow_hidpi=true
 
 [physics]
 
@@ -40,3 +41,4 @@ common/physics_interpolation=true
 [rendering]
 
 environment/defaults/default_clear_color=Color(0.043, 0.071, 0.125, 1)
+anti_aliasing/quality/msaa_2d=2
