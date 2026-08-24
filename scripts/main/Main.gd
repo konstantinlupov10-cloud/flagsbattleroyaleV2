@@ -31,6 +31,12 @@ const SPAWN_SPACING_FACTOR := 1.15
 
 var _arena: Arena
 var _flags_by_code: Dictionary = {}  # code -> Flag
+## The flag currently frozen in place for a ROUND WINNER reveal, if any --
+## needs explicit cleanup (queue_free) once the next round's flags spawn in,
+## since it's no longer in _flags_by_code's "will get overwritten" path (its
+## code has already permanently qualified, so it never appears in a future
+## round's pool).
+var _frozen_round_winner: Flag = null
 
 func _ready() -> void:
 	_arena = ARENA_SCENE.instantiate()
@@ -127,17 +133,35 @@ func _on_tournament_started(_total_flags: int) -> void:
 ## departed/freed) except on the very first round, which never reaches this
 ## handler at all -- tournament_started's own spawn covers that one.
 func _on_qualifying_round_reset(pool_entries: Array) -> void:
+	_clear_frozen_round_winner()
 	_spawn_flags(pool_entries, RoyaleSettings.relaunch_speed_base)
 
 ## A qualifying round's winner never itself escaped through the gap (that's
 ## exactly why it won: everyone else did, this one didn't) -- so unlike
 ## every other departure, nothing has told this flag to leave yet. It's
 ## still live and bouncing in the arena at this exact moment.
+##
+## Freezing it in place (same treatment as the champion at the very end)
+## rather than calling depart() -- departing disables the flag's collision
+## and sends it flying off in a straight line same as any other exit, which
+## looked broken during the ROUND WINNER reveal specifically: the reveal
+## shows for a few real seconds (see GameManager.ROUND_ADVANCE_DELAY_SECONDS),
+## long enough for that flight to visibly cross clean through the arena,
+## ignoring the ring boundary since collisions are already off -- confirmed
+## via direct feedback. It gets cleaned up (queue_free) once the next round's
+## flags spawn in, via _clear_frozen_round_winner().
 func _on_flag_qualified(code: String, _country_name: String, _rank: int, _total: int) -> void:
 	if _flags_by_code.has(code):
 		var flag: Flag = _flags_by_code[code]
 		if is_instance_valid(flag) and not flag.is_departing():
-			flag.depart(true)
+			flag.freeze = true
+			flag.linear_velocity = Vector2.ZERO
+			_frozen_round_winner = flag
+
+func _clear_frozen_round_winner() -> void:
+	if _frozen_round_winner != null and is_instance_valid(_frozen_round_winner):
+		_frozen_round_winner.queue_free()
+	_frozen_round_winner = null
 
 ## The qualifiers that just closed out the qualifying arena already departed
 ## it (each one's Flag node is mid-flight toward the leaderboard, or already
@@ -148,6 +172,7 @@ func _on_flag_qualified(code: String, _country_name: String, _rank: int, _total:
 ## this, the first elimination's round_reset would try to reposition those
 ## stale freed references and crash.
 func _on_last_flag_standing_started(qualifiers: Array) -> void:
+	_clear_frozen_round_winner()
 	_spawn_flags(qualifiers, RoyaleSettings.relaunch_speed_base)
 
 ## Last Flag Standing: after every elimination, all remaining flags reset to
@@ -184,3 +209,4 @@ func _on_tournament_reset() -> void:
 		if is_instance_valid(flag):
 			flag.queue_free()
 	_flags_by_code.clear()
+	_frozen_round_winner = null
