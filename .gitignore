@@ -1,0 +1,15 @@
+# Godot 4 generated/local files
+.godot/
+.import/
+export_presets.cfg
+*.translation
+
+# Build output
+build/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Vendored flag source (downloaded, not authored)
+tools/flag-icons-src/

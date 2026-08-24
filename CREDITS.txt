@@ -1,0 +1,11 @@
+Flag artwork: flag-icons (https://github.com/lipis/flag-icons)
+License: MIT
+No modifications made to the flag artwork itself.
+Roster: full ISO 3166-1 alpha-2 currently-assigned list (249 codes) + Kosovo (xk) = 250 flags and territories.
+
+Sound effects: "8-Bit Sound Effect Pack (Vol. 001)" by Shades (https://soundcloud.com/noshades), via OpenGameArt.org
+License: CC0
+Used: elimination_pop.wav (Coin 2), round_whoosh.wav (Exit 3), countdown_tick.wav (Select 3), nova_boom.wav (Explosion 1)
+
+Music: "8-Bit Battle Loop" via OpenGameArt.org (https://opengameart.org/content/8-bit-battle-loop)
+License: CC0

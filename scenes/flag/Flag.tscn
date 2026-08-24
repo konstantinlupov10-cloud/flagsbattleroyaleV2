@@ -1,0 +1,21 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/flag/Flag.gd" id="1"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_1"]
+resource_local_to_scene = true
+size = Vector2(64, 42.67)
+
+[node name="Flag" type="RigidBody2D"]
+script = ExtResource("1")
+collision_layer = 1
+collision_mask = 3
+
+[node name="Shadow" type="Sprite2D" parent="."]
+modulate = Color(0, 0, 0, 0.35)
+position = Vector2(4, 5)
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_1")
