@@ -51,14 +51,7 @@ anchors_preset = -1
 anchor_bottom = 1.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_fill")
 
-[node name="Scroll" type="ScrollContainer" parent="Root/VBox"]
+[node name="Field" type="Control" parent="Root/VBox"]
 layout_mode = 2
 size_flags_vertical = 3
-horizontal_scroll_mode = 0
-
-[node name="Grid" type="GridContainer" parent="Root/VBox/Scroll"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/h_separation = 6
-theme_override_constants/v_separation = 6
-columns = 25
+clip_contents = true

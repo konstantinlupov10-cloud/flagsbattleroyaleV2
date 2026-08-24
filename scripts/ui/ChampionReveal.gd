@@ -12,7 +12,13 @@ class_name ChampionReveal
 ##    the whole final instead of a single qualifying round, with a longer
 ##    display duration befitting the bigger moment.
 
-const ROUND_WINNER_DISPLAY_SECONDS := 2.2
+## Matches GameManager.ROUND_ADVANCE_DELAY_SECONDS -- the reveal's own
+## display duration and the actual delay before the next round's flags
+## spawn are two independent timers by construction (this one is UI-only,
+## that one is game-state), so keeping them numerically in sync is what
+## prevents the reveal disappearing early/lingering after gameplay has
+## already moved on underneath it.
+const ROUND_WINNER_DISPLAY_SECONDS := 3.0
 ## Deliberately NOT tied to intermission_started for the champion case --
 ## GameManager._crown_champion() emits champion_crowned and then calls
 ## _start_intermission() (which emits intermission_started) immediately

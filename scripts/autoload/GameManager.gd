@@ -35,6 +35,14 @@ var state: TournamentState = TournamentState.QUALIFYING
 
 var _qualifying_timer: Timer
 var _intermission_timer: Timer
+var _round_advance_timer: Timer
+
+## How long a round's ROUND WINNER reveal gets to actually be seen before
+## the next round's flags start spawning/bouncing underneath it. Advancing
+## immediately (the original behavior) meant the reveal card and the next
+## round's arena activity began in the exact same instant -- confirmed via
+## direct feedback that they visibly overlapped.
+const ROUND_ADVANCE_DELAY_SECONDS := 3.0
 
 ## Each qualifying round is its own miniature last-flag-standing contest:
 ## every code in _round_pool bounces in the arena until only one remains
@@ -66,6 +74,11 @@ func _ready() -> void:
 	_intermission_timer.one_shot = true
 	_intermission_timer.timeout.connect(_on_intermission_timeout)
 	add_child(_intermission_timer)
+
+	_round_advance_timer = Timer.new()
+	_round_advance_timer.one_shot = true
+	_round_advance_timer.timeout.connect(_on_round_advance_timeout)
+	add_child(_round_advance_timer)
 
 ## Called explicitly by Main, not auto-run in _ready() -- so headless tools
 ## sharing these autoloads (e.g. the escape-rate histogram) don't accidentally
@@ -130,6 +143,9 @@ func _record_round_winner(winner_code: String) -> void:
 	var winner_name: String = _code_to_name.get(winner_code, winner_code)
 	var rank: int = TournamentLog.record_qualifier(winner_code, winner_name)
 	flag_qualified.emit(winner_code, winner_name, rank, TournamentLog.qualifier_count())
+	_round_advance_timer.start(ROUND_ADVANCE_DELAY_SECONDS)
+
+func _on_round_advance_timeout() -> void:
 	if _qualifying_closing:
 		_end_qualifying()
 		return
