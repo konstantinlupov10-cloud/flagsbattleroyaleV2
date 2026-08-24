@@ -26,7 +26,6 @@ signal flag_qualified(code: String, country_name: String, qualify_rank: int, tot
 signal qualifying_ended(total_qualified: int)
 signal last_flag_standing_started(finalists: Array)
 signal flag_eliminated(code: String, country_name: String, remaining: int, elimination_rank: int)
-signal round_reset(remaining_codes: Array, round_multiplier: float)
 signal champion_crowned(code: String, country_name: String, podium: Array)
 signal intermission_started(seconds: float)
 signal tournament_reset()
@@ -210,6 +209,20 @@ func _start_last_flag_standing(qualifiers: Array) -> void:
 	if _finalist_codes.size() <= 1:
 		_crown_champion()
 
+## Last Flag Standing now behaves exactly like a single qualifying round
+## (confirmed via direct request): the whole pool just keeps bouncing
+## continuously, each elimination only removes that one flag, and nothing
+## else gets touched. No full-population reposition/relaunch here anymore --
+## that used to fire on EVERY elimination (see round_reset's old doc
+## comment/git history), which was fine in principle but with a small
+## enough remaining pool, eliminations happen genuinely every 1-2 real
+## seconds (confirmed via a headless timestamp trace, not just guessed at),
+## so the whole arena was visibly wiping and relaunching itself that often --
+## read as "flags keep resetting" rather than a fight naturally thinning
+## out. The speed decay below still takes effect immediately without any
+## reset/signal needed: Flag._physics_process() re-reads
+## GameManager.current_speed_multiplier() every physics frame regardless of
+## what triggered the change.
 func _handle_eliminate(code: String, country_name: String) -> void:
 	_finalist_codes.erase(code)
 	var rank: int = TournamentLog.record_elimination(code, country_name)
@@ -221,7 +234,6 @@ func _handle_eliminate(code: String, country_name: String) -> void:
 		_lfs_multiplier * (1.0 - RoyaleSettings.lfs_speed_multiplier_decay_per_elimination),
 		RoyaleSettings.lfs_speed_multiplier_floor
 	)
-	round_reset.emit(_finalist_codes.duplicate(), _lfs_multiplier)
 
 func _crown_champion() -> void:
 	state = TournamentState.CHAMPION_REVEAL

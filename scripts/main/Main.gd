@@ -57,7 +57,6 @@ func _ready() -> void:
 	GameManager.qualifying_round_reset.connect(_on_qualifying_round_reset)
 	GameManager.flag_qualified.connect(_on_flag_qualified)
 	GameManager.last_flag_standing_started.connect(_on_last_flag_standing_started)
-	GameManager.round_reset.connect(_on_round_reset)
 	GameManager.champion_crowned.connect(_on_champion_crowned)
 	GameManager.tournament_reset.connect(_on_tournament_reset)
 
@@ -141,9 +140,9 @@ func _pack_positions(count: int, min_radius: float, max_radius: float, base_spac
 ## Entries are {code, name} dicts; overwrites _flags_by_code so a code's
 ## entry always points at whichever instance is actually currently alive.
 ##
-## reset_physics_interpolation() after every direct position set below (here
-## and in _on_round_reset) matters now that physics/common/physics_interpolation
-## is on (see project.godot -- added specifically to fix visible per-frame
+## reset_physics_interpolation() after every direct position set below matters
+## now that physics/common/physics_interpolation is on (see project.godot --
+## added specifically to fix visible per-frame
 ## jitter on fast-moving flags, most noticeable on diagonal motion, confirmed
 ## screenshots looked fine since a single frame has nothing to interpolate
 ## between). Without the reset, a teleported flag would visibly SLIDE from
@@ -209,32 +208,10 @@ func _clear_frozen_round_winner() -> void:
 ## freed once it crossed the boundary) -- nothing spawns them back in on its
 ## own. Fresh Flag instances for the final, same spawn approach as
 ## _on_tournament_started but over just the qualifier roster, replacing each
-## code's now-stale (already-departed/freed) entry in _flags_by_code. Without
-## this, the first elimination's round_reset would try to reposition those
-## stale freed references and crash.
+## code's now-stale (already-departed/freed) entry in _flags_by_code.
 func _on_last_flag_standing_started(qualifiers: Array) -> void:
 	_clear_frozen_round_winner()
 	_spawn_flags(qualifiers, RoyaleSettings.relaunch_speed_base)
-
-## Last Flag Standing: after every elimination, all remaining flags reset to
-## fresh positions and relaunch at the new (slower) round speed -- confirmed
-## requirement, not optional polish.
-func _on_round_reset(remaining_codes: Array, multiplier: float) -> void:
-	var center: Vector2 = _arena.get_center_global()
-	var count: int = remaining_codes.size()
-	var max_radius: float = RoyaleSettings.ring_radius - SPAWN_MARGIN
-	var spacing: float = RoyaleSettings.flag_width_px * SPAWN_SPACING_FACTOR
-	var positions: Array = _pack_positions(count, SPAWN_MIN_RADIUS, max_radius, spacing)
-	var speed: float = RoyaleSettings.relaunch_speed_base * multiplier
-	for i in range(count):
-		var code: String = remaining_codes[i]
-		if not _flags_by_code.has(code):
-			continue
-		var flag: Flag = _flags_by_code[code]
-		flag.global_position = center + positions[i]
-		flag.reset_physics_interpolation()
-		var launch_dir: float = randf() * TAU
-		flag.launch(Vector2(cos(launch_dir), sin(launch_dir)) * speed)
 
 ## The champion is the one flag that never had depart() called on it (it
 ## won, it didn't escape) -- freeze it in place for the reveal instead of
