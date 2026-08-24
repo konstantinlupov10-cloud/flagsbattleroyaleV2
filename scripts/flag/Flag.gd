@@ -36,6 +36,15 @@ func _ready() -> void:
 	mat.bounce = RoyaleSettings.flag_bounce
 	physics_material_override = mat
 
+	# body_entered fires for both flag-flag and flag-wall contacts alike --
+	# AudioManager doesn't need to know which, just rate-limits whatever
+	# comes in. max_contacts_reported only needs to be nonzero for the
+	# signal to fire at all; the exact count doesn't matter since nothing
+	# here reads get_colliding_bodies().
+	contact_monitor = true
+	max_contacts_reported = 4
+	body_entered.connect(_on_body_entered)
+
 ## Assigns identity + texture and sizes the sprite/collision shape to match.
 ## texture may be null (headless physics testing, no visuals needed).
 func setup(code: String, display_name: String, texture: Texture2D) -> void:
@@ -65,6 +74,18 @@ func launch(velocity: Vector2) -> void:
 
 func is_departing() -> bool:
 	return _departing
+
+## departing flags already have their collision layer/mask cleared in
+## depart(), so this can only fire for a genuine in-arena bounce -- no
+## _departing guard needed. Reports the midpoint between the two colliding
+## bodies (falling back to this flag's own position for a non-Node2D body,
+## not that any exist on the relevant collision layers) so AudioManager can
+## play the clack positioned where the hit actually happened on screen.
+func _on_body_entered(body: Node) -> void:
+	var contact_point: Vector2 = global_position
+	if body is Node2D:
+		contact_point = (global_position + (body as Node2D).global_position) * 0.5
+	AudioManager.notify_flag_collision(contact_point)
 
 ## Deliberately _physics_process(), not _integrate_forces(). _integrate_forces
 ## runs BEFORE the physics server resolves this step's collisions, so

@@ -7,5 +7,9 @@ Sound effects: "8-Bit Sound Effect Pack (Vol. 001)" by Shades (https://soundclou
 License: CC0
 Used: elimination_pop.wav (Coin 2), round_whoosh.wav (Exit 3), countdown_tick.wav (Select 3), nova_boom.wav (Explosion 1)
 
-Music: "8-Bit Battle Loop" via OpenGameArt.org (https://opengameart.org/content/8-bit-battle-loop)
+Sound effects: Kenney "Impact Sounds" (https://kenney.nl/assets/impact-sounds)
+License: CC0
+Used: collision_thud.ogg (impactPunch_medium_000)
+
+Music: "Hyper Ultra-Racing" by josepharaoh99, via OpenGameArt.org (https://opengameart.org/content/hyper-ultra-racing)
 License: CC0
