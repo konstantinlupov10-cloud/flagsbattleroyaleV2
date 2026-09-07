@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://chto2328fu3o6"
-path="res://.godot/imported/yt.svg-c0c15a9da3dccebda8cf2f51a3bb966e.ctex"
+uid="uid://b5px6og2lowks"
+path="res://.godot/imported/pride.svg-500e03e585363aa7418bc4fb773cdd30.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/flags/textures/yt.svg"
-dest_files=["res://.godot/imported/yt.svg-c0c15a9da3dccebda8cf2f51a3bb966e.ctex"]
+source_file="res://assets/flags/textures/pride.svg"
+dest_files=["res://.godot/imported/pride.svg-500e03e585363aa7418bc4fb773cdd30.ctex"]
 
 [params]
 

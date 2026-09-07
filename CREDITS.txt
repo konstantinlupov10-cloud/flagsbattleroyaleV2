@@ -1,7 +1,16 @@
 Flag artwork: flag-icons (https://github.com/lipis/flag-icons)
 License: MIT
 No modifications made to the flag artwork itself.
-Roster: full ISO 3166-1 alpha-2 currently-assigned list (249 codes) + Kosovo (xk) = 250 flags and territories.
+Roster: full ISO 3166-1 alpha-2 currently-assigned list (249 codes) + Kosovo (xk) = 250 flags and
+territories, minus 13 removed as visual duplicates of another entry already in the roster (a
+dependent territory using its sovereign country's flag unaltered -- e.g. French Guiana/Guadeloupe/
+etc. all fly the plain French tricolor already represented by France itself), plus the Pride flag
+(pride.svg, drawn for this project, six-stripe rainbow) = 238 flags total.
+
+Duplicates removed (kept the sovereign country's entry in each case): Bonaire/Sint Eustatius/Saba,
+French Guiana, Guadeloupe, Heard Island and McDonald Islands, Mayotte, Réunion, Saint Barthélemy,
+Saint Helena/Ascension/Tristan da Cunha, Saint Martin, Saint Pierre and Miquelon, Svalbard and
+Jan Mayen, United States Minor Outlying Islands, Wallis and Futuna.
 
 Sound effects: "8-Bit Sound Effect Pack (Vol. 001)" by Shades (https://soundcloud.com/noshades), via OpenGameArt.org
 License: CC0
