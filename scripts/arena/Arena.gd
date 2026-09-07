@@ -1,17 +1,14 @@
 extends Node2D
 class_name Arena
-## The physical arena: wall collision (GapRing) and escape detection only --
-## purely functional, no visible rendering of its own. The ring's neon
-## outline is drawn entirely by GlowRing (see scripts/arena/GlowRing.gd), a
-## separate node in its own glow-enabled SubViewport, so that Godot's Glow
-## (a whole-viewport post-process) can never touch flag sprites regardless
-## of their own texture colors -- an HDR-color/threshold approach tuned on a
-## SHARED environment can only ever reduce the chance of flag bleed, not
-## structurally guarantee it (confirmed request for a real guarantee).
-## GlowRing reads gap_ring's rotation directly every frame to stay in sync
-## with the wall it's drawing on top of.
+## The physical arena: wall collision (GapRing, BlockerArc) and escape
+## detection only -- purely functional, no visible rendering of its own.
+## Both arcs' neon outlines are drawn entirely by GlowRing/GlowArc (see
+## those scripts), which read gap_ring's/blocker_arc's rotation directly
+## every frame to stay in sync with the collision geometry they're drawing
+## on top of.
 
 @onready var gap_ring: GapRing = $GapRing
+@onready var blocker_arc: BlockerArc = $BlockerArc
 @onready var escape_detector: EscapeDetector = $EscapeDetector
 
 func _ready() -> void:

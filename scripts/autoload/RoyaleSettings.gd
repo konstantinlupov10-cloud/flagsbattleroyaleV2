@@ -86,6 +86,13 @@ extends Node
 func gap_width_degrees() -> float:
 	return 360.0 * float(gap_segment_count) / float(ring_segment_count)
 
+## Width of the second rotating wall arc (BlockerArc/GlowArc) that sweeps the
+## OPPOSITE direction around the ring from the main gap (confirmed design,
+## reference image) -- wider than the gap itself so it fully seals the gap
+## for a real stretch of time whenever the two happen to overlap, not just
+## a single instant.
+@export var blocker_arc_width_degrees: float = 35.0
+
 # ---------------------------------------------------------------------------
 # Flag physics
 # ---------------------------------------------------------------------------
