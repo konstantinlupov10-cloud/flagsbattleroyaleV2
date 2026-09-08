@@ -42,7 +42,7 @@ autowrap_mode = 2
 [node name="SubtitleLabel" type="Label" parent="Root/Card/VBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 26
-text = "238 flags enter. One survives."
+text = "207 flags enter. One survives."
 horizontal_alignment = 1
 
 [node name="StartButton" type="Button" parent="Root/Card/VBox"]
