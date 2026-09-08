@@ -14,6 +14,20 @@ config/name="Flags Battle Royale"
 run/main_scene="res://scenes/main/Main.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 
+[audio]
+
+; Default (15ms) leaves very little headroom for the audio thread to survive
+; a main-thread CPU stall without an underrun -- exactly what a burst of
+; simultaneous flag-flag collisions (207-flag arena, early qualifying) can
+; cause. An underrun during a stall is what makes some sounds actually
+; reach the speaker late, arriving during what looks like a quiet moment
+; afterward, even though AudioManager's own cooldown correctly DROPS excess
+; play() requests rather than queuing them -- confirmed by reading that
+; code, not guessed at; the delay isn't from game logic. More buffer
+; headroom trades a few extra milliseconds of fixed latency (imperceptible
+; for a collision clack) for a lot more resilience against exactly this.
+driver/output_latency=60
+
 [autoload]
 
 RoyaleSettings="*res://scripts/autoload/RoyaleSettings.gd"

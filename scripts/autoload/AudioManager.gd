@@ -16,6 +16,34 @@ const MAX_COLLISION_SFX_PER_SECOND := 7.0
 const MIN_COLLISION_SFX_INTERVAL := 1.0 / MAX_COLLISION_SFX_PER_SECOND
 const COLLISION_SFX_POOL_SIZE := 4
 
+## Guards against a completely different failure mode than the rate cap
+## above: a main-thread stall (confirmed via direct measurement -- e.g. the
+## very first flag spawn loading ~207 SVG textures cold took 700ms-2s)
+## makes Godot's physics fall behind real wall-clock time, then catch up
+## over the following real seconds (bounded by
+## physics/common/max_physics_steps_per_frame). Every body_entered signal
+## fired during that catch-up is a perfectly real collision, so the rate
+## cap alone still lets some through -- they just land audibly LATE,
+## trickling out over the next second or two even once the screen looks
+## calm again (confirmed via direct report).
+##
+## FIRST attempt at this compared Engine.get_physics_frames() against a
+## fixed startup baseline -- broke collision audio entirely (confirmed via
+## direct report). The bug: once physics falls behind real time even once,
+## it stays at that same fixed number of ticks behind forever after (it
+## proceeds at normal speed from wherever it fell behind, it doesn't run
+## extra-fast to fully re-close the gap against the ORIGINAL baseline) --
+## so that "lag" reading only ever goes up, never resets, and permanently
+## exceeded the threshold after the very first stall.
+##
+## This version tracks whether a stall happened RECENTLY instead of a
+## cumulative-since-startup drift: _process() watches for an abnormally
+## long rendered frame and opens a short suppression window after one,
+## self-clearing on its own once the window passes with no further stalls --
+## nothing to permanently drift.
+const STALL_FRAME_THRESHOLD_SEC := 0.1
+const STALL_SUPPRESS_WINDOW_SEC := 1.0
+
 ## -60% perceived volume, expressed as the dB drop that actually produces a
 ## 0.4x amplitude multiplier (20*log10(0.4)) -- dB is logarithmic, so a flat
 ## "-60" here would be a far more drastic cut than "60% quieter" implies.
@@ -38,6 +66,17 @@ var _music_player: AudioStreamPlayer
 var _collision_sfx_pool: Array[AudioStreamPlayer2D] = []
 var _collision_sfx_pool_index: int = 0
 var _last_collision_sfx_time_sec: float = -INF
+
+## Real-time timestamp (Time.get_ticks_msec()-based) until which collision
+## sounds are suppressed -- set a STALL_SUPPRESS_WINDOW_SEC into the future
+## every time _process() notices an abnormally long frame, so it keeps
+## sliding forward through a whole run of stuttery frames and only actually
+## lapses once things have been smooth for a full window.
+var _collision_sound_suppressed_until: float = -INF
+
+func _process(delta: float) -> void:
+	if delta > STALL_FRAME_THRESHOLD_SEC:
+		_collision_sound_suppressed_until = (Time.get_ticks_msec() / 1000.0) + STALL_SUPPRESS_WINDOW_SEC
 
 func _ready() -> void:
 	_music_player = AudioStreamPlayer.new()
@@ -62,11 +101,17 @@ func _ready() -> void:
 ## Called by any Flag on every body_entered (flag-flag or flag-wall alike --
 ## RigidBody2D doesn't distinguish, and neither does the sound), passing the
 ## world-space point the collision happened at so playback can be positioned
-## there. Silently drops the request if the cooldown hasn't cleared yet
-## rather than queueing it -- a missed clack in a split second already full
-## of them is inaudible anyway.
+## there. Silently drops the request -- rather than queueing it -- for
+## either of two different reasons: the ordinary rate cap (a missed clack in
+## a split second already full of them is inaudible anyway), or a stall
+## having happened recently enough that this collision is likely part of
+## the backlog catching up rather than something happening right now (a
+## missed clack for a moment that's already passed is worse than inaudible,
+## it's actively confusing -- see the suppression-window comment above).
 func notify_flag_collision(world_position: Vector2) -> void:
 	var now: float = Time.get_ticks_msec() / 1000.0
+	if now < _collision_sound_suppressed_until:
+		return
 	if now - _last_collision_sfx_time_sec < MIN_COLLISION_SFX_INTERVAL:
 		return
 	_last_collision_sfx_time_sec = now

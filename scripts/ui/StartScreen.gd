@@ -14,6 +14,19 @@ class_name StartScreen
 ## duplication is exactly what made the recent blue->purple retheme require
 ## hunting down colors across half a dozen scene files. Doing it in script
 ## here means this one node never needs a matching manual edit again.
+##
+## Also preloads every flag texture while this screen sits idle waiting for
+## a click -- confirmed via direct measurement that loading/rasterizing all
+## ~207 SVGs cold takes ~650ms, and that cost was landing right at
+## _spawn_flags() the moment the first round actually starts (a genuine
+## ~700ms-2s main-thread stall measured directly on that exact frame).
+## Godot's physics then has to catch up from that stall over the following
+## real seconds (bounded by max_physics_steps_per_frame), which is what was
+## surfacing as "collision sounds sound queued, then trickle out over a
+## second or two" -- not an audio bug, a cold-cache stall at the worst
+## possible moment. Warming the cache here, while the player is just looking
+## at a static card with nothing moving, makes the same ~650ms cost
+## genuinely invisible instead of landing mid-collision-chaos.
 
 signal start_pressed
 
@@ -53,6 +66,13 @@ func _ready() -> void:
 	$Root/Card/VBox/SubtitleLabel.add_theme_color_override("font_color", Palette.TEXT_DIM)
 
 	_start_button.pressed.connect(_on_start_pressed)
+
+	# Let this screen actually render/present once first, so the loading
+	# work below has zero chance of delaying the player's first look at it.
+	await get_tree().process_frame
+	await get_tree().process_frame
+	for entry in FlagDatabase.get_shuffled_roster():
+		FlagDatabase.get_texture(entry.code)
 
 func _on_start_pressed() -> void:
 	# Guards against a double-click (or an accidental second signal
