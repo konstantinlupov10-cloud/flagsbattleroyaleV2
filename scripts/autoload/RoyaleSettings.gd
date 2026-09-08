@@ -97,7 +97,7 @@ func gap_width_degrees() -> float:
 # Flag physics
 # ---------------------------------------------------------------------------
 
-@export var flag_width_px: float = 40.0
+@export var flag_width_px: float = 44.0  # +10% from the original 40.0, per direct request
 ## Full elastic restitution (mirror reflection: angle in = angle out), not a
 ## softer value like the 0.7 first tried. A wall bounce only ever touches the
 ## NORMAL component of velocity; any restitution below 1.0 shrinks that
