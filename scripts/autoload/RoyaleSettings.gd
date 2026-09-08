@@ -133,11 +133,21 @@ func gap_width_degrees() -> float:
 ## the expected constant-speed step, matching actual collision events, not
 ## a rendering bug -- physics interpolation, see project.godot, didn't fix
 ## it since the underlying simulated positions themselves were chaotic at
-## that speed/density). Confirmed as clearly better at 671.07. Now pushed
-## back up toward that ceiling -- if jitter resurfaces, that diagnostic
-## approach (tools/ dir, sample one flag's position every tick, look for the
-## fraction deviating >20% from the expected constant-speed step) is the way
-## to re-confirm it's the same cause before cutting speed again.
+## that speed/density). Confirmed as clearly better at 671.07, then pushed
+## back up to 750.
+##
+## A later "split/lagging" report (after flag_width_px grew 40 -> 44) tried
+## cutting this to 682 (matching the size increase) on the theory that a
+## bigger collision shape hits harder -- re-running the same full-roster
+## diagnostic measured 8.1% distorted ticks at 750/44px vs 8.3% at 682/44px,
+## i.e. no meaningful change, so that cut was reverted rather than kept on
+## an unproven theory. Both numbers are well under the old 22% "bad" bar
+## anyway, meaning per this specific metric the collision-level jitter that
+## was fixed earlier this session is still fixed -- whatever's behind the
+## newer report is likely a different mechanism, not this one. Re-run the
+## same diagnostic (tools/ dir, sample one flag's position every tick
+## against the expected constant-speed step) before assuming speed is the
+## lever again.
 @export var relaunch_speed_base: float = 750.0
 
 # ---------------------------------------------------------------------------

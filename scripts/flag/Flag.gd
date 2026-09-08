@@ -62,7 +62,6 @@ func _fit_sprite_and_collision(texture: Texture2D) -> void:
 		return
 	var scale_factor: float = RoyaleSettings.flag_width_px / tex_size.x
 	$Sprite2D.scale = Vector2(scale_factor, scale_factor)
-	$Shadow.scale = Vector2(scale_factor, scale_factor)
 	var shape: RectangleShape2D = $CollisionShape2D.shape
 	shape.size = tex_size * scale_factor
 

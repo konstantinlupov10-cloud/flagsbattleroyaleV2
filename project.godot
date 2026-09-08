@@ -30,6 +30,7 @@ window/size/initial_position_type=0
 window/size/initial_position=Vector2i(0, 45)
 window/size/resizable=false
 window/stretch/mode="canvas_items"
+window/vsync/vsync_mode=1
 
 [physics]
 
