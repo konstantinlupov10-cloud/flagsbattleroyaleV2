@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dgdm504yljc3k"
-path="res://.godot/imported/gb.svg-e081b40c8a67a0e084469416fdde35fe.ctex"
+uid="uid://dv27y1a1f01yr"
+path="res://.godot/imported/gb-nir.svg-442991fea0e3880e157e2f79a4a638b0.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/flags/textures/gb.svg"
-dest_files=["res://.godot/imported/gb.svg-e081b40c8a67a0e084469416fdde35fe.ctex"]
+source_file="res://assets/flags/textures/gb-nir.svg"
+dest_files=["res://.godot/imported/gb-nir.svg-442991fea0e3880e157e2f79a4a638b0.ctex"]
 
 [params]
 

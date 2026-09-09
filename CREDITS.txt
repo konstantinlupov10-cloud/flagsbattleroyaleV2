@@ -5,8 +5,10 @@ Roster: the IOC's 206 National Olympic Committees (per direct request) -- the 19
 plus the 13 additional entities the IOC recognizes separately (Palestine, Cook Islands, Kosovo,
 Taiwan, Hong Kong, Puerto Rico, American Samoa, Aruba, Bermuda, British Virgin Islands, Cayman
 Islands, Guam, U.S. Virgin Islands) -- plus the Pride flag (pride.svg, drawn for this project,
-six-stripe rainbow) = 207 flags total. Holy See/Vatican was dropped from an earlier UN-based roster
-since it has no NOC and doesn't compete at the Olympics.
+six-stripe rainbow) = 207, then the United Kingdom split into its four constituent countries
+(England, Scotland, Wales, Northern Ireland -- gb-eng/gb-sct/gb-wls/gb-nir.svg, same flag-icons
+source/license, per direct request) = 210 flags total. Holy See/Vatican was dropped from an earlier
+UN-based roster since it has no NOC and doesn't compete at the Olympics.
 
 Sound effects: "8-Bit Sound Effect Pack (Vol. 001)" by Shades (https://soundcloud.com/noshades), via OpenGameArt.org
 License: CC0
