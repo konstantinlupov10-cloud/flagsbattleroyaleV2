@@ -78,6 +78,7 @@ theme_override_colors/font_color = Color(0.941176, 0.909804, 1, 1)
 theme_override_font_sizes/font_size = 34
 text = "Country"
 horizontal_alignment = 1
+autowrap_mode = 3
 
 [node name="NextTournamentLabel" type="Label" parent="Root/Card"]
 visible = false
@@ -86,3 +87,4 @@ theme_override_colors/font_color = Color(0.72, 0.65, 0.82, 1)
 theme_override_font_sizes/font_size = 26
 text = "Next tournament in 0 seconds"
 horizontal_alignment = 1
+autowrap_mode = 3
