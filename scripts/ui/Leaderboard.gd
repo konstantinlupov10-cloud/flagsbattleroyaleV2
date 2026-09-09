@@ -25,6 +25,15 @@ var _dots: Array[Panel] = []
 var _active_is_a: bool = true
 var _current_page: int = 0
 var _page_timer: float = 0.0
+## Tracks the in-flight page-flip tween (if any) so a new tournament
+## starting mid-flip can kill it -- without this, an animation already
+## running toward "page B visible" would keep fighting _on_tournament_started()'s
+## own modulate/position resets on subsequent frames and could still end up
+## showing page B, which only got repopulated for the OLD tournament's data
+## (confirmed via direct report: stale ranks 6-10 sometimes visible right
+## after a new tournament starts, persisting until enough new qualifiers
+## happen to flip pages again on their own).
+var _flip_tween: Tween
 
 func _ready() -> void:
 	var page_size: int = RoyaleSettings.leaderboard_page_size
@@ -47,13 +56,22 @@ func _ready() -> void:
 	_update_dots()
 
 func _on_tournament_started(_total_flags: int) -> void:
+	if _flip_tween and _flip_tween.is_valid():
+		_flip_tween.kill()
 	_current_page = 0
 	_page_timer = 0.0
 	_active_is_a = true
 	_page_a.modulate.a = 1.0
 	_page_a.position.x = 0.0
 	_page_b.modulate.a = 0.0
+	_page_b.position.x = 0.0
 	_populate(_rows_a, 0)
+	# Defensive: nothing should show page B before a real flip repopulates it
+	# (see _flip_page(), which always populates the incoming page right
+	# before revealing it), but clearing its stale rows too means there's no
+	# leftover old-tournament data sitting there even hidden, in case some
+	# future change ever shows it a different way.
+	_populate(_rows_b, 0)
 	_update_dots()
 
 func _on_flag_qualified(_code: String, _country_name: String, _rank: int, _total: int) -> void:
@@ -90,12 +108,14 @@ func _flip_page() -> void:
 	incoming.position.x = slide
 
 	var t: float = RoyaleSettings.leaderboard_transition_seconds
-	var tween := create_tween()
-	tween.set_parallel(true)
-	tween.tween_property(outgoing, "modulate:a", 0.0, t)
-	tween.tween_property(outgoing, "position:x", -slide, t).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
-	tween.tween_property(incoming, "modulate:a", 1.0, t).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-	tween.tween_property(incoming, "position:x", 0.0, t).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	if _flip_tween and _flip_tween.is_valid():
+		_flip_tween.kill()
+	_flip_tween = create_tween()
+	_flip_tween.set_parallel(true)
+	_flip_tween.tween_property(outgoing, "modulate:a", 0.0, t)
+	_flip_tween.tween_property(outgoing, "position:x", -slide, t).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	_flip_tween.tween_property(incoming, "modulate:a", 1.0, t).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	_flip_tween.tween_property(incoming, "position:x", 0.0, t).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
 	_update_dots()
 

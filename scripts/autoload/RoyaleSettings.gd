@@ -185,7 +185,7 @@ func gap_width_degrees() -> float:
 # ---------------------------------------------------------------------------
 
 @export var qualifying_seconds: float = 1800.0  # 30 minutes
-@export var intermission_seconds: float = 30.0   # 30 seconds
+@export var intermission_seconds: float = 15.0   # 15 seconds
 
 ## After every Last Flag Standing elimination, the speed multiplier decays by
 ## this fraction (compounding), never going below the floor -- confirmed
