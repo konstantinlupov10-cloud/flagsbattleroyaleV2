@@ -15,24 +15,38 @@ class_name Flag
 
 var _departing: bool = false
 
-## Set when this flag touches the blocker arc during its light-blue freeze
-## window (see BlockerArc.is_freezing_active()). A frozen flag runs at
-## RoyaleSettings.frozen_flag_speed_factor of normal speed for the rest of
-## the round -- "the rest of the round" needs no explicit timer since every
-## qualifying round spawns brand-new Flag instances, and Last Flag Standing
-## is a single round. Touching the blocker arc again (any color) thaws it.
-var _frozen: bool = false
-## Frost visual: the flag's own pixels are never touched (confirmed via
-## direct feedback -- it must keep its exact original colours). The cue is
-## a Node2D holding a light-blue border hugging the flag's outer edge plus
-## a row of neon-glowing icicles off the bottom, both drawn with the same
-## manual-glow trick as GlowRing/GlowArc (bright core + wider dim copies).
-## Built to the sprite's size in _fit_sprite_and_collision(), hidden until
-## _frozen.
-var _frost_icicles: Node2D
+enum FlagState { NORMAL, FROZEN, FIRE }
+
+## Element state, set by touching the blocker arc (see _on_body_entered):
+## FROZEN runs at RoyaleSettings.frozen_flag_speed_factor of normal speed,
+## FIRE at fire_flag_speed_factor, for the rest of the round -- no explicit
+## timer needed since every qualifying round spawns brand-new Flag
+## instances and Last Flag Standing is a single round. Blue arc: normal ->
+## frozen, fire -> normal. Red arc: normal -> fire, frozen -> normal. Green
+## arc, or the arc of the flag's own element: no change.
+var _state: FlagState = FlagState.NORMAL
+## The flag's own pixels are never touched (confirmed via direct feedback --
+## it must keep its exact original colours). Each state's cue is a separate
+## Node2D of drawn effects, sized to the sprite in
+## _fit_sprite_and_collision(), all hidden except the current state's.
+var _frost_visual: Node2D    # light-blue border + neon icicles below
+var _fire_visual: FlameEffect  # anime-style flame above the flag
+var _fire_border: Node2D     # orange border hugging the flag while on fire
+## Rendered sprite size, cached in _fit_sprite_and_collision(). The state
+## visuals are built lazily the first time a flag actually enters that state
+## (see _ensure_*_visual) rather than for all ~200 flags at spawn -- building
+## them eagerly was a multi-second hitch on every round reset.
+var _rendered: Vector2 = Vector2.ZERO
+## Seconds the flag has held its current non-NORMAL state. A frozen/burning
+## flag drops back to NORMAL on its own after
+## RoyaleSettings.special_state_max_seconds if no arc contact clears it
+## first. Reset to 0 by every _set_state change.
+var _state_elapsed: float = 0.0
 
 const BORDER_CORE_COLOR := Color(0.55, 0.85, 1.0, 0.95)
 const BORDER_GLOW_COLOR := Color(0.4, 0.8, 1.0, 0.28)
+const FIRE_BORDER_CORE_COLOR := Color(1.0, 0.24, 0.06, 0.97)
+const FIRE_BORDER_GLOW_COLOR := Color(1.0, 0.15, 0.02, 0.3)
 const ICICLE_CORE_COLOR := Color(0.85, 0.96, 1.0, 0.97)
 ## Widest/dimmest first -- stacked behind the core for a soft cyan halo.
 ## `drop` starts each glow layer that many px BELOW the flag's bottom edge
@@ -92,15 +106,19 @@ func _fit_sprite_and_collision(texture: Texture2D) -> void:
 	var rendered: Vector2 = tex_size * scale_factor
 	var shape: RectangleShape2D = $CollisionShape2D.shape
 	shape.size = rendered
-	_build_frost_overlay(rendered)
+	_rendered = rendered
 
-func _build_frost_overlay(rendered: Vector2) -> void:
+## Built the first time the flag freezes (and kept, hidden, afterwards).
+func _ensure_frost_visual() -> void:
+	if _frost_visual or _rendered == Vector2.ZERO:
+		return
+	var rendered: Vector2 = _rendered
 	var hw: float = rendered.x * 0.5
 	var hh: float = rendered.y * 0.5
 
-	_frost_icicles = Node2D.new()
-	_frost_icicles.visible = false
-	add_child(_frost_icicles)
+	_frost_visual = Node2D.new()
+	_frost_visual.visible = false
+	add_child(_frost_visual)
 
 	# Light-blue border hugging the flag's outer edge (offset 1px out so it
 	# frames rather than eats into the flag) -- a dim wider glow copy under a
@@ -109,14 +127,14 @@ func _build_frost_overlay(rendered: Vector2) -> void:
 	var bh := hh + 1.0
 	var rect := PackedVector2Array([
 		Vector2(-b, -bh), Vector2(b, -bh), Vector2(b, bh), Vector2(-b, bh), Vector2(-b, -bh)])
-	for spec in [{"w": 6.0, "c": BORDER_GLOW_COLOR}, {"w": 2.5, "c": BORDER_CORE_COLOR}]:
+	for spec in [{"w": 2.6, "c": BORDER_GLOW_COLOR}, {"w": 1.0, "c": BORDER_CORE_COLOR}]:
 		var border := Line2D.new()
 		border.points = rect
 		border.width = spec.w
 		border.default_color = spec.c
 		border.antialiased = true
 		border.joint_mode = Line2D.LINE_JOINT_ROUND
-		_frost_icicles.add_child(border)
+		_frost_visual.add_child(border)
 
 	# One tapered spike per icicle: a Line2D from just inside the flag's
 	# bottom edge down to a sharp point (width_curve tapers to 0), plus a
@@ -136,9 +154,42 @@ func _build_frost_overlay(rendered: Vector2) -> void:
 		var length: float = hh * randf_range(0.9, 1.5) * mid_bias
 		var tip := Vector2(cx + randf_range(-base_w, base_w) * 0.18, hh + length)
 		for layer in ICICLE_GLOW_LAYERS:
-			_frost_icicles.add_child(_make_icicle(
+			_frost_visual.add_child(_make_icicle(
 				Vector2(cx, hh + layer.drop), tip, base_w * layer.scale, layer.color, taper))
-		_frost_icicles.add_child(_make_icicle(Vector2(cx, hh), tip, base_w, ICICLE_CORE_COLOR, taper))
+		_frost_visual.add_child(_make_icicle(Vector2(cx, hh), tip, base_w, ICICLE_CORE_COLOR, taper))
+
+## Built the first time the flag catches fire (and kept, hidden, afterwards).
+## The anime-style flame (see FlameEffect.gd) plus a thin red border hugging
+## the flag edge -- the fire counterpart to the frost visual's blue border.
+func _ensure_fire_visual() -> void:
+	if _fire_visual or _rendered == Vector2.ZERO:
+		return
+	var rendered: Vector2 = _rendered
+	var hw: float = rendered.x * 0.5
+	var hh: float = rendered.y * 0.5
+
+	_fire_visual = FlameEffect.new()
+	_fire_visual.position = Vector2(0, -hh + 2.0)  # feet overlap the top edge slightly
+	_fire_visual.visible = false
+	add_child(_fire_visual)
+	(_fire_visual as FlameEffect).configure(rendered.x * 1.4, rendered.y * 1.65)
+
+	# thin red border: dim wide glow under a brighter core
+	_fire_border = Node2D.new()
+	_fire_border.visible = false
+	add_child(_fire_border)
+	var b := hw + 1.0
+	var bh := hh + 1.0
+	var rect := PackedVector2Array([
+		Vector2(-b, -bh), Vector2(b, -bh), Vector2(b, bh), Vector2(-b, bh), Vector2(-b, -bh)])
+	for spec in [{"w": 1.4, "c": FIRE_BORDER_GLOW_COLOR}, {"w": 0.5, "c": FIRE_BORDER_CORE_COLOR}]:
+		var border := Line2D.new()
+		border.points = rect
+		border.width = spec.w
+		border.default_color = spec.c
+		border.antialiased = true
+		border.joint_mode = Line2D.LINE_JOINT_ROUND
+		_fire_border.add_child(border)
 
 func _make_icicle(from: Vector2, to: Vector2, width: float, color: Color, taper: Curve) -> Line2D:
 	var ln := Line2D.new()
@@ -173,22 +224,40 @@ func _on_body_entered(body: Node) -> void:
 	AudioManager.notify_flag_collision(contact_point)
 
 	if body is BlockerArc:
-		# The arc's current colour decides the outcome of a contact:
-		#  - blue (freezing window): freezes a normal flag; a frozen flag
-		#    just bounces, it does NOT thaw while the arc is still blue
-		#    (confirmed via direct feedback).
-		#  - green: thaws a frozen flag; does nothing to a normal one.
-		if (body as BlockerArc).is_freezing_active():
-			_set_frozen(true)
-		else:
-			_set_frozen(false)
+		_resolve_arc_contact((body as BlockerArc).current_state())
 
-func _set_frozen(value: bool) -> void:
-	if _frozen == value:
+## Element interaction on touching the blocker arc:
+##   blue (freezing): normal -> frozen, fire -> normal, frozen -> (bounce)
+##   red  (fire):     normal -> fire,   frozen -> normal, fire -> (bounce)
+##   green:           no change to any state
+func _resolve_arc_contact(arc_state: int) -> void:
+	match arc_state:
+		BlockerArc.State.FREEZING:
+			if _state == FlagState.NORMAL:
+				_set_state(FlagState.FROZEN)
+			elif _state == FlagState.FIRE:
+				_set_state(FlagState.NORMAL)
+		BlockerArc.State.FIRE:
+			if _state == FlagState.NORMAL:
+				_set_state(FlagState.FIRE)
+			elif _state == FlagState.FROZEN:
+				_set_state(FlagState.NORMAL)
+
+func _set_state(value: FlagState) -> void:
+	if _state == value:
 		return
-	_frozen = value
-	if _frost_icicles:
-		_frost_icicles.visible = value
+	_state = value
+	_state_elapsed = 0.0
+	if value == FlagState.FROZEN:
+		_ensure_frost_visual()
+	elif value == FlagState.FIRE:
+		_ensure_fire_visual()
+	if _frost_visual:
+		_frost_visual.visible = value == FlagState.FROZEN
+	if _fire_visual:
+		_fire_visual.visible = value == FlagState.FIRE
+	if _fire_border:
+		_fire_border.visible = value == FlagState.FIRE
 
 ## Deliberately _physics_process(), not _integrate_forces(). _integrate_forces
 ## runs BEFORE the physics server resolves this step's collisions, so
@@ -212,15 +281,25 @@ func _set_frozen(value: bool) -> void:
 ## elastic restitution -- see flag_bounce's comment in RoyaleSettings.gd and
 ## GapRing.gd's matching physics_material_override for why that has to be set
 ## explicitly on the wall too, not just on the flag.
-func _physics_process(_delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	if freeze:
 		return
 	if _departing:
 		_check_departure_bounds()
 		return
+	# A frozen/burning flag reverts to NORMAL on its own if it's held the
+	# state too long without an arc contact flipping it -- keeps a flag from
+	# being stuck slow (or fast) for a whole Last-Flag-Standing round.
+	if _state != FlagState.NORMAL:
+		_state_elapsed += delta
+		if _state_elapsed >= RoyaleSettings.special_state_max_seconds:
+			_set_state(FlagState.NORMAL)
 	var target_speed: float = RoyaleSettings.relaunch_speed_base * GameManager.current_speed_multiplier()
-	if _frozen:
-		target_speed *= RoyaleSettings.frozen_flag_speed_factor
+	match _state:
+		FlagState.FROZEN:
+			target_speed *= RoyaleSettings.frozen_flag_speed_factor
+		FlagState.FIRE:
+			target_speed *= RoyaleSettings.fire_flag_speed_factor
 	var v: Vector2 = linear_velocity
 	if v.length() > 0.01:
 		linear_velocity = v.normalized() * target_speed

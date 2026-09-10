@@ -6,9 +6,9 @@ class_name GlowArc
 ## abandoned there for producing uneven, blobby results on a thin curve
 ## across a large mostly-empty canvas, so several stacked Line2D copies --
 ## progressively wider and dimmer outward from a bright core -- stand in
-## for it with no blur/post-process step at all). Neon GREEN specifically
-## (confirmed via direct request), distinct from the main ring's blue-violet,
-## so the two read as clearly separate moving elements.
+## for it with no blur/post-process step at all). Recolours to match
+## BlockerArc.current_state(): neon green (neutral), icy blue (freezing),
+## or fiery orange-red (fire).
 
 const OUTLINE_POINTS_PER_DEGREE := 4.0
 
@@ -30,10 +30,9 @@ const LAYERS: Array = [
 	{"width": 3.0, "color": Color(0.88, 1.0, 0.82, 1.0)},
 ]
 
-## Per-layer colors used while BlockerArc.is_freezing_active() -- an icy
-## light blue instead of the electric green, same alpha progression and the
-## same near-white hot core. Only default_color is swapped; the widths and
-## the Line2D geometry stay put.
+## Per-layer colors for the arc's other two states -- same alpha
+## progression and near-white hot core as the green LAYERS, just re-hued.
+## Only default_color is swapped; widths and geometry stay put.
 const LAYER_COLORS_FREEZING: Array = [
 	Color(0.3, 0.72, 1.0, 0.12),
 	Color(0.3, 0.72, 1.0, 0.22),
@@ -41,10 +40,17 @@ const LAYER_COLORS_FREEZING: Array = [
 	Color(0.45, 0.85, 1.0, 0.8),
 	Color(0.9, 0.97, 1.0, 1.0),
 ]
+const LAYER_COLORS_FIRE: Array = [
+	Color(1.0, 0.05, 0.03, 0.12),
+	Color(1.0, 0.07, 0.04, 0.22),
+	Color(1.0, 0.1, 0.06, 0.4),
+	Color(1.0, 0.18, 0.12, 0.8),
+	Color(1.0, 0.62, 0.55, 1.0),
+]
 
 var _lines: Array = []
 var _source_arc: BlockerArc
-var _showing_freezing: bool = false
+var _shown_state: int = -1  # BlockerArc.State, -1 = not applied yet
 
 func setup(source_arc: BlockerArc) -> void:
 	_source_arc = source_arc
@@ -83,8 +89,13 @@ func _process(_delta: float) -> void:
 		return
 	for line in _lines:
 		line.rotation = _source_arc.rotation
-	var want_freezing: bool = _source_arc.is_freezing_active()
-	if want_freezing != _showing_freezing:
-		_showing_freezing = want_freezing
+	var state: int = _source_arc.current_state()
+	if state != _shown_state:
+		_shown_state = state
+		var colors: Array
+		match state:
+			BlockerArc.State.FREEZING: colors = LAYER_COLORS_FREEZING
+			BlockerArc.State.FIRE: colors = LAYER_COLORS_FIRE
+			_: colors = []  # GREEN uses the base LAYERS colors
 		for i in range(_lines.size()):
-			_lines[i].default_color = LAYER_COLORS_FREEZING[i] if want_freezing else LAYERS[i].color
+			_lines[i].default_color = colors[i] if not colors.is_empty() else LAYERS[i].color

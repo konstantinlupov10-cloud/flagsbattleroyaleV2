@@ -93,21 +93,28 @@ func gap_width_degrees() -> float:
 ## a single instant.
 @export var blocker_arc_width_degrees: float = 35.0
 
-## The blocker arc's freeze cycle (confirmed design), timed from each round
-## start (resets every round): green until blocker_freeze_first_delay_seconds,
-## then a blocker_freeze_blue_seconds light-blue window (a flag that hits it
-## then freezes), then green for blocker_freeze_interval_seconds, then
-## another blue window, and so on -- up to blocker_freeze_max_windows blue
-## windows total, after which it stays green for the rest of the round.
-@export var blocker_freeze_first_delay_seconds: float = 15.0
-@export var blocker_freeze_interval_seconds: float = 20.0
-@export var blocker_freeze_blue_seconds: float = 5.0
-@export var blocker_freeze_max_windows: int = 3
-## A frozen flag's speed multiplier for the rest of the round -- 0.45 =
-## "slows down by 55%". A frozen flag thaws (back to full speed) only if it
-## touches the blocker arc while it's GREEN; touching it while still blue
-## just bounces.
+## The blocker arc's colour cycle (confirmed design), timed from each round
+## start (resets every round). It stays green for
+## blocker_arc_first_green_seconds, then repeats the sequence
+## GREEN -> BLUE(freezing) -> GREEN -> RED(fire) forever, where each GREEN
+## phase lasts blocker_arc_green_seconds, the BLUE phase
+## blocker_arc_freezing_seconds and the RED phase blocker_arc_fire_seconds.
+## See BlockerArc.current_state().
+@export var blocker_arc_first_green_seconds: float = 15.0
+@export var blocker_arc_green_seconds: float = 8.0
+@export var blocker_arc_freezing_seconds: float = 5.0
+@export var blocker_arc_fire_seconds: float = 8.0
+## A flag's speed multiplier while it holds a state, for the rest of the
+## round: frozen 0.45 (-55%), on fire 1.30 (+30%). A frozen flag that hits
+## the fire (red) arc becomes normal; a fire flag that hits the freezing
+## (blue) arc becomes normal; hitting the green arc, or the arc of its own
+## element, leaves the state unchanged.
 @export var frozen_flag_speed_factor: float = 0.45
+@export var fire_flag_speed_factor: float = 1.30
+## Hard cap on how long a flag stays frozen or on fire. If no arc contact
+## has cleared or flipped the state within this many seconds, the flag
+## reverts to NORMAL on its own. (Reset whenever the state changes.)
+@export var special_state_max_seconds: float = 30.0
 
 # ---------------------------------------------------------------------------
 # Flag physics
