@@ -62,8 +62,10 @@ func _ready() -> void:
 	_start_button.add_theme_color_override("font_hover_color", Palette.TEXT)
 	_start_button.add_theme_color_override("font_pressed_color", Palette.TEXT)
 
-	$Root/Card/VBox/TitleLabel.add_theme_color_override("font_color", Palette.GOLD)
+	$Root/Card/VBox/TitleRow/TitleLabel.add_theme_color_override("font_color", Palette.GOLD)
+	$Root/Card/VBox/TitleRow/VersionLabel.add_theme_color_override("font_color", Palette.GOLD)
 	$Root/Card/VBox/SubtitleLabel.add_theme_color_override("font_color", Palette.TEXT_DIM)
+	$Root/Card/VBox/HandleLabel.add_theme_color_override("font_color", Palette.TEXT)
 
 	_start_button.pressed.connect(_on_start_pressed)
 
