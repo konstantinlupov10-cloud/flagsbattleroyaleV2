@@ -15,6 +15,33 @@ class_name Flag
 
 var _departing: bool = false
 
+## Set when this flag touches the blocker arc during its light-blue freeze
+## window (see BlockerArc.is_freezing_active()). A frozen flag runs at
+## RoyaleSettings.frozen_flag_speed_factor of normal speed for the rest of
+## the round -- "the rest of the round" needs no explicit timer since every
+## qualifying round spawns brand-new Flag instances, and Last Flag Standing
+## is a single round. Touching the blocker arc again (any color) thaws it.
+var _frozen: bool = false
+## Frost visual: the flag's own pixels are never touched (confirmed via
+## direct feedback -- it must keep its exact original colours). The cue is
+## a Node2D holding a light-blue border hugging the flag's outer edge plus
+## a row of neon-glowing icicles off the bottom, both drawn with the same
+## manual-glow trick as GlowRing/GlowArc (bright core + wider dim copies).
+## Built to the sprite's size in _fit_sprite_and_collision(), hidden until
+## _frozen.
+var _frost_icicles: Node2D
+
+const BORDER_CORE_COLOR := Color(0.55, 0.85, 1.0, 0.95)
+const BORDER_GLOW_COLOR := Color(0.4, 0.8, 1.0, 0.28)
+const ICICLE_CORE_COLOR := Color(0.85, 0.96, 1.0, 0.97)
+## Widest/dimmest first -- stacked behind the core for a soft cyan halo.
+## `drop` starts each glow layer that many px BELOW the flag's bottom edge
+## so its sideways bloom never washes onto the flag itself.
+const ICICLE_GLOW_LAYERS: Array = [
+	{"scale": 2.4, "drop": 5.0, "color": Color(0.35, 0.78, 1.0, 0.10)},
+	{"scale": 1.7, "drop": 2.5, "color": Color(0.45, 0.85, 1.0, 0.22)},
+]
+
 func _ready() -> void:
 	add_to_group("active_flags")
 	gravity_scale = 0.0
@@ -62,8 +89,67 @@ func _fit_sprite_and_collision(texture: Texture2D) -> void:
 		return
 	var scale_factor: float = RoyaleSettings.flag_width_px / tex_size.x
 	$Sprite2D.scale = Vector2(scale_factor, scale_factor)
+	var rendered: Vector2 = tex_size * scale_factor
 	var shape: RectangleShape2D = $CollisionShape2D.shape
-	shape.size = tex_size * scale_factor
+	shape.size = rendered
+	_build_frost_overlay(rendered)
+
+func _build_frost_overlay(rendered: Vector2) -> void:
+	var hw: float = rendered.x * 0.5
+	var hh: float = rendered.y * 0.5
+
+	_frost_icicles = Node2D.new()
+	_frost_icicles.visible = false
+	add_child(_frost_icicles)
+
+	# Light-blue border hugging the flag's outer edge (offset 1px out so it
+	# frames rather than eats into the flag) -- a dim wider glow copy under a
+	# brighter core, both closed rectangles.
+	var b := hw + 1.0
+	var bh := hh + 1.0
+	var rect := PackedVector2Array([
+		Vector2(-b, -bh), Vector2(b, -bh), Vector2(b, bh), Vector2(-b, bh), Vector2(-b, -bh)])
+	for spec in [{"w": 6.0, "c": BORDER_GLOW_COLOR}, {"w": 2.5, "c": BORDER_CORE_COLOR}]:
+		var border := Line2D.new()
+		border.points = rect
+		border.width = spec.w
+		border.default_color = spec.c
+		border.antialiased = true
+		border.joint_mode = Line2D.LINE_JOINT_ROUND
+		_frost_icicles.add_child(border)
+
+	# One tapered spike per icicle: a Line2D from just inside the flag's
+	# bottom edge down to a sharp point (width_curve tapers to 0), plus a
+	# couple of wider, dimmer copies behind it for the cyan neon halo.
+	var taper := Curve.new()
+	taper.add_point(Vector2(0.0, 1.0))
+	taper.add_point(Vector2(0.68, 0.5))
+	taper.add_point(Vector2(1.0, 0.0))
+
+	var count := 5
+	for t in range(count):
+		var span: float = rendered.x / float(count)
+		var cx: float = -hw + span * (t + 0.5) + randf_range(-span * 0.12, span * 0.12)
+		var base_w: float = span * randf_range(0.5, 0.72)
+		# Longer toward the middle -- meltwater pools there and drips most.
+		var mid_bias: float = 0.6 + 0.85 * sin(PI * (float(t) + 0.5) / float(count))
+		var length: float = hh * randf_range(0.9, 1.5) * mid_bias
+		var tip := Vector2(cx + randf_range(-base_w, base_w) * 0.18, hh + length)
+		for layer in ICICLE_GLOW_LAYERS:
+			_frost_icicles.add_child(_make_icicle(
+				Vector2(cx, hh + layer.drop), tip, base_w * layer.scale, layer.color, taper))
+		_frost_icicles.add_child(_make_icicle(Vector2(cx, hh), tip, base_w, ICICLE_CORE_COLOR, taper))
+
+func _make_icicle(from: Vector2, to: Vector2, width: float, color: Color, taper: Curve) -> Line2D:
+	var ln := Line2D.new()
+	ln.points = PackedVector2Array([from, to])
+	ln.width = width
+	ln.width_curve = taper
+	ln.default_color = color
+	ln.antialiased = true
+	ln.begin_cap_mode = Line2D.LINE_CAP_NONE
+	ln.end_cap_mode = Line2D.LINE_CAP_NONE
+	return ln
 
 ## Gives this flag an initial direction -- speed magnitude doesn't matter
 ## here since _physics_process() pins it every frame regardless, but the
@@ -85,6 +171,24 @@ func _on_body_entered(body: Node) -> void:
 	if body is Node2D:
 		contact_point = (global_position + (body as Node2D).global_position) * 0.5
 	AudioManager.notify_flag_collision(contact_point)
+
+	if body is BlockerArc:
+		# The arc's current colour decides the outcome of a contact:
+		#  - blue (freezing window): freezes a normal flag; a frozen flag
+		#    just bounces, it does NOT thaw while the arc is still blue
+		#    (confirmed via direct feedback).
+		#  - green: thaws a frozen flag; does nothing to a normal one.
+		if (body as BlockerArc).is_freezing_active():
+			_set_frozen(true)
+		else:
+			_set_frozen(false)
+
+func _set_frozen(value: bool) -> void:
+	if _frozen == value:
+		return
+	_frozen = value
+	if _frost_icicles:
+		_frost_icicles.visible = value
 
 ## Deliberately _physics_process(), not _integrate_forces(). _integrate_forces
 ## runs BEFORE the physics server resolves this step's collisions, so
@@ -115,6 +219,8 @@ func _physics_process(_delta: float) -> void:
 		_check_departure_bounds()
 		return
 	var target_speed: float = RoyaleSettings.relaunch_speed_base * GameManager.current_speed_multiplier()
+	if _frozen:
+		target_speed *= RoyaleSettings.frozen_flag_speed_factor
 	var v: Vector2 = linear_velocity
 	if v.length() > 0.01:
 		linear_velocity = v.normalized() * target_speed

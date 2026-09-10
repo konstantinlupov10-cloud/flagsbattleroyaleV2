@@ -16,6 +16,12 @@ class_name BlockerArc
 
 const SEGMENTS_PER_DEGREE := 2.0  # matches GlowArc's visual density closely enough
 
+## Seconds since the current round started -- drives the green -> light-blue
+## -> green freeze window (see is_freezing_active()). Arena (and therefore
+## this node) is built once and never rebuilt, so the timer is reset from
+## GameManager's round-boundary signals rather than from _ready().
+var _round_elapsed: float = 0.0
+
 func _ready() -> void:
 	collision_layer = 2
 	collision_mask = 0
@@ -24,6 +30,27 @@ func _ready() -> void:
 	mat.bounce = RoyaleSettings.flag_bounce
 	physics_material_override = mat
 	_build_segments()
+
+	GameManager.tournament_started.connect(func(_t): _round_elapsed = 0.0)
+	GameManager.qualifying_round_reset.connect(func(_p): _round_elapsed = 0.0)
+	GameManager.last_flag_standing_started.connect(func(_f): _round_elapsed = 0.0)
+
+## True during each light-blue window: none until first_delay, then a
+## blue_seconds window, then interval_seconds green, then the next window,
+## for up to max_windows windows, then green for the rest of the round.
+## GlowArc reads this to recolor itself; Flag reads it to decide whether a
+## contact freezes it.
+func is_freezing_active() -> bool:
+	var first: float = RoyaleSettings.blocker_freeze_first_delay_seconds
+	if _round_elapsed < first:
+		return false
+	var blue: float = RoyaleSettings.blocker_freeze_blue_seconds
+	var period: float = blue + RoyaleSettings.blocker_freeze_interval_seconds
+	var since_first: float = _round_elapsed - first
+	var window_index: int = int(since_first / period)
+	if window_index >= RoyaleSettings.blocker_freeze_max_windows:
+		return false
+	return since_first - float(window_index) * period < blue
 
 func _build_segments() -> void:
 	var width_deg: float = RoyaleSettings.blocker_arc_width_degrees
@@ -46,6 +73,7 @@ func _build_segments() -> void:
 		add_child(coll)
 
 func _physics_process(delta: float) -> void:
+	_round_elapsed += delta
 	# Exactly opposite GapRing's own rotation -- negative of the same base
 	# speed/multiplier, so the two arcs' relative sweep rate (how often they
 	# actually cross paths) still scales down together with Last Flag

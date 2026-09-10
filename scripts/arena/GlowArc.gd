@@ -30,8 +30,21 @@ const LAYERS: Array = [
 	{"width": 3.0, "color": Color(0.88, 1.0, 0.82, 1.0)},
 ]
 
+## Per-layer colors used while BlockerArc.is_freezing_active() -- an icy
+## light blue instead of the electric green, same alpha progression and the
+## same near-white hot core. Only default_color is swapped; the widths and
+## the Line2D geometry stay put.
+const LAYER_COLORS_FREEZING: Array = [
+	Color(0.3, 0.72, 1.0, 0.12),
+	Color(0.3, 0.72, 1.0, 0.22),
+	Color(0.35, 0.78, 1.0, 0.4),
+	Color(0.45, 0.85, 1.0, 0.8),
+	Color(0.9, 0.97, 1.0, 1.0),
+]
+
 var _lines: Array = []
 var _source_arc: BlockerArc
+var _showing_freezing: bool = false
 
 func setup(source_arc: BlockerArc) -> void:
 	_source_arc = source_arc
@@ -66,6 +79,12 @@ func _compute_points() -> PackedVector2Array:
 	return points
 
 func _process(_delta: float) -> void:
-	if _source_arc:
-		for line in _lines:
-			line.rotation = _source_arc.rotation
+	if not _source_arc:
+		return
+	for line in _lines:
+		line.rotation = _source_arc.rotation
+	var want_freezing: bool = _source_arc.is_freezing_active()
+	if want_freezing != _showing_freezing:
+		_showing_freezing = want_freezing
+		for i in range(_lines.size()):
+			_lines[i].default_color = LAYER_COLORS_FREEZING[i] if want_freezing else LAYERS[i].color

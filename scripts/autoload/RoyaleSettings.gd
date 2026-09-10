@@ -93,6 +93,22 @@ func gap_width_degrees() -> float:
 ## a single instant.
 @export var blocker_arc_width_degrees: float = 35.0
 
+## The blocker arc's freeze cycle (confirmed design), timed from each round
+## start (resets every round): green until blocker_freeze_first_delay_seconds,
+## then a blocker_freeze_blue_seconds light-blue window (a flag that hits it
+## then freezes), then green for blocker_freeze_interval_seconds, then
+## another blue window, and so on -- up to blocker_freeze_max_windows blue
+## windows total, after which it stays green for the rest of the round.
+@export var blocker_freeze_first_delay_seconds: float = 15.0
+@export var blocker_freeze_interval_seconds: float = 20.0
+@export var blocker_freeze_blue_seconds: float = 5.0
+@export var blocker_freeze_max_windows: int = 3
+## A frozen flag's speed multiplier for the rest of the round -- 0.45 =
+## "slows down by 55%". A frozen flag thaws (back to full speed) only if it
+## touches the blocker arc while it's GREEN; touching it while still blue
+## just bounces.
+@export var frozen_flag_speed_factor: float = 0.45
+
 # ---------------------------------------------------------------------------
 # Flag physics
 # ---------------------------------------------------------------------------
@@ -148,7 +164,7 @@ func gap_width_degrees() -> float:
 ## same diagnostic (tools/ dir, sample one flag's position every tick
 ## against the expected constant-speed step) before assuming speed is the
 ## lever again.
-@export var relaunch_speed_base: float = 750.0
+@export var relaunch_speed_base: float = 712.5  # 750 - 5%, per direct request
 
 # ---------------------------------------------------------------------------
 # Departure animation
