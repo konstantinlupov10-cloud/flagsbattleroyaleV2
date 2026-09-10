@@ -156,13 +156,24 @@ func _pack_positions(count: int, min_radius: float, max_radius: float, base_spac
 ## appearing there instantly, since interpolation has no way to know "this
 ## wasn't real motion" otherwise.
 func _spawn_flags(entries: Array, speed: float) -> void:
+	# Shuffle a copy here so every spawn -- every qualifying round, not just
+	# the once-per-tournament roster shuffle -- assigns fresh random
+	# positions. Without this, the round pool is walked in GameManager's
+	# fixed _code_to_name insertion order (that ONE tournament-start shuffle),
+	# so a flag keeps essentially the same position ring for the entire
+	# 30-minute tournament, only drifting inward by ~1 index per round as
+	# earlier-ordered flags qualify out -- confirmed via direct report ("my
+	# flag always spawns in the outer layers") and a headless trace showing
+	# a flag locked to radius 340-390 across a dozen consecutive rounds.
+	var shuffled: Array = entries.duplicate()
+	shuffled.shuffle()
 	var center: Vector2 = _arena.get_center_global()
-	var count: int = entries.size()
+	var count: int = shuffled.size()
 	var max_radius: float = RoyaleSettings.ring_radius - SPAWN_MARGIN
 	var spacing: float = RoyaleSettings.flag_width_px * SPAWN_SPACING_FACTOR
 	var positions: Array = _pack_positions(count, SPAWN_MIN_RADIUS, max_radius, spacing)
 	for i in range(count):
-		var entry: Dictionary = entries[i]
+		var entry: Dictionary = shuffled[i]
 		var flag: Flag = FLAG_SCENE.instantiate()
 		_flags_root.add_child(flag)
 		flag.setup(entry.code, entry.name, FlagDatabase.get_texture(entry.code))
