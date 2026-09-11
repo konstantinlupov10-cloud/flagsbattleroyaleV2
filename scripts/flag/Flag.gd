@@ -127,7 +127,7 @@ func _ensure_frost_visual() -> void:
 	var bh := hh + 1.0
 	var rect := PackedVector2Array([
 		Vector2(-b, -bh), Vector2(b, -bh), Vector2(b, bh), Vector2(-b, bh), Vector2(-b, -bh)])
-	for spec in [{"w": 2.6, "c": BORDER_GLOW_COLOR}, {"w": 1.0, "c": BORDER_CORE_COLOR}]:
+	for spec in [{"w": 3.2, "c": BORDER_GLOW_COLOR}, {"w": 1.3, "c": BORDER_CORE_COLOR}]:
 		var border := Line2D.new()
 		border.points = rect
 		border.width = spec.w
