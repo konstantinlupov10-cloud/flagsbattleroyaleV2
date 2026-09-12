@@ -46,7 +46,7 @@ vertical_alignment = 1
 [node name="VersionLabel" type="Label" parent="Root/Card/VBox/TitleRow"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
-text = "v1.3"
+text = "v1.4"
 vertical_alignment = 1
 
 [node name="SubtitleLabel" type="Label" parent="Root/Card/VBox"]

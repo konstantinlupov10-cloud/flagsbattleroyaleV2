@@ -34,7 +34,9 @@ extends Node
 ## exactly. A modest 2x resolution bump, not the 4x (288) tried and reverted
 ## for an over-precise +15% request -- simpler ask, simpler change.
 @export var ring_segment_count: int = 144
-## 11 segments * 2.5deg = 27.5deg opening. Originally widened from an
+## 14 segments * 2.5deg = 35deg opening (up from 11/27.5deg, then 12/30deg,
+## per direct request to widen the escape gap -- 14 keeps the segment math
+## clean against ring_segment_count=144). Originally widened from an
 ## initial 15deg after full-scale testing showed only ~8 qualifiers per
 ## 30-min window, too sparse for good stream pacing. Tune against
 ## tools/EscapeRateHistogram.gd -- though note that tool predates the
@@ -42,7 +44,7 @@ extends Node
 ## so it stops producing qualifiers after round one; still valid for reading
 ## gap_width_degrees()/tuning wall geometry, just not a realistic qualify-
 ## rate readout right now.
-@export var gap_segment_count: int = 11
+@export var gap_segment_count: int = 14
 
 ## How far past the ring radius (the wall's CENTERLINE, not its outer
 ## surface) a flag must be before EscapeDetector even looks at it -- anything
@@ -91,7 +93,7 @@ func gap_width_degrees() -> float:
 ## reference image) -- wider than the gap itself so it fully seals the gap
 ## for a real stretch of time whenever the two happen to overlap, not just
 ## a single instant.
-@export var blocker_arc_width_degrees: float = 35.0
+@export var blocker_arc_width_degrees: float = 40.0
 
 ## The blocker arc's colour cycle (confirmed design), timed from each round
 ## start (resets every round). It stays green for
@@ -120,7 +122,7 @@ func gap_width_degrees() -> float:
 # Flag physics
 # ---------------------------------------------------------------------------
 
-@export var flag_width_px: float = 45.32  # 44.0 + 3%, per direct request
+@export var flag_width_px: float = 51.35  # 49.85 + 3%, per direct request
 ## Full elastic restitution (mirror reflection: angle in = angle out), not a
 ## softer value like the 0.7 first tried. A wall bounce only ever touches the
 ## NORMAL component of velocity; any restitution below 1.0 shrinks that
